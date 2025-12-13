@@ -1,0 +1,62 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/Computer.hdl
+/**
+ * The Hack computer, consisting of CPU, ROM and RAM.
+ * When reset = 0, the program stored in the ROM executes.
+ * When reset = 1, the program's execution restarts. 
+ * Thus, to start running the currently loaded program,
+ * set reset to 1, and then set it to 0. 
+ * From this point onwards, the user is at the mercy of the software.
+ * Depending on the program's code, and whether the code is correct,
+ * the screen may show some output, the user may be expected to enter
+ * some input using the keyboard, or the program may do some procerssing. 
+ */
+CHIP Computer {
+
+    IN reset;
+
+    PARTS:
+    // 1. ROM32K (Instruction Memory)
+    // Tugas: Ngasih 'instruction' ke CPU berdasarkan alamat 'pc' yang diminta CPU.
+    // Input: address (dari PC output CPU)
+    // Output: instruction (masuk ke instruction input CPU)
+    ROM32K(address=pcWire, out=instructionWire);
+
+    // 2. CPU (The Brain)
+    // Tugas: Eksekusi instruksi.
+    // Input: 
+    //   - inM: Data yang dibaca dari Memory
+    //   - instruction: Instruksi dari ROM
+    //   - reset: Tombol reset dari luar (input chip utama)
+    // Output:
+    //   - outM: Data yang mau ditulis ke Memory
+    //   - writeM: Sinyal "Tulis sekarang!"
+    //   - addressM: Alamat Memory yang mau diakses
+    //   - pc: Alamat instruksi selanjutnya (balik ke ROM)
+    CPU(
+        inM=memOutWire,         // Bacaan dari Memory masuk sini
+        instruction=instructionWire, // Instruksi dari ROM masuk sini
+        reset=reset,            // Reset pin dari luar
+        outM=outMWire,          // Data hasil hitungan CPU (mau ditulis ke memori)
+        writeM=writeMWire,      // Flag: Tulis atau enggak?
+        addressM=addressMWire,  // Alamat memori yang dituju
+        pc=pcWire               // Alamat instruksi selanjutnya -> lempar ke ROM
+    );
+
+    // 3. Memory (RAM + Screen + Keyboard)
+    // Tugas: Simpan data & Handle IO.
+    // Input:
+    //   - in: Data dari CPU (outM)
+    //   - load: Sinyal write dari CPU (writeM)
+    //   - address: Alamat dari CPU (addressM)
+    // Output:
+    //   - out: Data yang diminta CPU (balik ke inM CPU)
+    Memory(
+        in=outMWire,            // Data dari CPU masuk sini
+        load=writeMWire,        // Perintah tulis dari CPU
+        address=addressMWire,   // Alamat dari CPU
+        out=memOutWire          // Hasil bacaan dikirim balik ke CPU
+    );
+}

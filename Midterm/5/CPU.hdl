@@ -1,0 +1,119 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/CPU.hdl
+/**
+ * The Hack Central Processing unit (CPU).
+ * Parses the binary code in the instruction input and executes it according to the
+ * Hack machine language specification. In the case of a C-instruction, computes the
+ * function specified by the instruction. If the instruction specifies to read a memory
+ * value, the inM input is expected to contain this value. If the instruction specifies
+ * to write a value to the memory, sets the outM output to this value, sets the addressM
+ * output to the target address, and asserts the writeM output (when writeM = 0, any
+ * value may appear in outM).
+ * If the reset input is 0, computes the address of the next instruction and sets the
+ * pc output to that value. If the reset input is 1, sets pc to 0.
+ * Note: The outM and writeM outputs are combinational: they are affected by the
+ * instruction's execution during the current cycle. The addressM and pc outputs are
+ * clocked: although they are affected by the instruction's execution, they commit to
+ * their new values only in the next cycle.
+ */
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // ---------------------------------------------------------
+    // 1. DECODING THE INSTRUCTION
+    // ---------------------------------------------------------
+    // instruction[15] menentukan tipe instruksi: 0 = A-instr, 1 = C-instr
+    Not(in=instruction[15], out=isAInstruction);
+    Or(a=instruction[15], b=false, out=isCInstruction);
+
+    // ---------------------------------------------------------
+    // 2. A-REGISTER HANDLING
+    // ---------------------------------------------------------
+    // Kalau A-instr: input adalah instruction itu sendiri (15 bit value).
+    // Kalau C-instr: input adalah output ALU.
+    // Selectornya adalah 'instruction[15]'.
+    Mux16(a=instruction, b=aluOut, sel=isCInstruction, out=inAReg);
+
+    // Kapan load ke A-Register?
+    // 1. Kalau ini A-instruction (isAInstruction == 1)
+    // 2. ATAU kalau ini C-instruction DAN destination bit d1 (instruction[5]) nyala.
+    And(a=isCInstruction, b=instruction[5], out=isCLoadA);
+    Or(a=isAInstruction, b=isCLoadA, out=loadA);
+
+    ARegister(in=inAReg, load=loadA, out=outA, out[0..14]=addressM);
+
+    // ---------------------------------------------------------
+    // 3. ALU INPUT SELECTION (A vs M)
+    // ---------------------------------------------------------
+    // Input kedua ALU (y) bisa dari A-Register atau Memory (inM).
+    // Ini ditentukan oleh 'a-bit' yaitu instruction[12].
+    // Valid HANYA jika ini C-instruction, tapi Mux bodo amat, dia pass aja.
+    Mux16(a=outA, b=inM, sel=instruction[12], out=aluInY);
+
+    // ---------------------------------------------------------
+    // 4. D-REGISTER HANDLING
+    // ---------------------------------------------------------
+    // Load ke D cuma kalau C-instruction DAN destination bit d2 (instruction[4]) nyala.
+    And(a=isCInstruction, b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=aluInX);
+
+    // ---------------------------------------------------------
+    // 5. ALU EXECUTION
+    // ---------------------------------------------------------
+    // Control bits c1..c6 mapping ke instruction[11..6]
+    ALU(x=aluInX, y=aluInY,
+        zx=instruction[11],
+        nx=instruction[10],
+        zy=instruction[9],
+        ny=instruction[8],
+        f=instruction[7],
+        no=instruction[6],
+        out=aluOut, out=outM, // Output ke internal signal & external pin
+        zr=zr, ng=ng);
+
+    // ---------------------------------------------------------
+    // 6. WRITE TO MEMORY (writeM)
+    // ---------------------------------------------------------
+    // Write ke Memory cuma kalau C-instruction DAN destination bit d3 (instruction[3]) nyala.
+    And(a=isCInstruction, b=instruction[3], out=writeM);
+
+    // ---------------------------------------------------------
+    // 7. PROGRAM COUNTER (PC) & JUMP LOGIC
+    // ---------------------------------------------------------
+    // Logic Jump (hanya valid kalau C-instruction):
+    // j1 (inst[2]) -> jump if out < 0 (ng == 1)
+    // j2 (inst[1]) -> jump if out == 0 (zr == 1)
+    // j3 (inst[0]) -> jump if out > 0 (ng == 0 && zr == 0)
+    
+    // Cek kondisi positif (strictly positive > 0)
+    Or(a=zr, b=ng, out=notPos);
+    Not(in=notPos, out=pos);
+
+    // Cek tiap kondisi jump
+    And(a=instruction[2], b=ng, out=jlt); // Jump Less Than
+    And(a=instruction[1], b=zr, out=jeq); // Jump Equal
+    And(a=instruction[0], b=pos, out=jgt); // Jump Greater Than
+
+    // Gabungin semua kemungkinan jump
+    Or(a=jlt, b=jeq, out=jle);
+    Or(a=jle, b=jgt, out=jumpConditionMet);
+
+    // PC Load (Jump) cuma terjadi kalau instructionnya C-Instruction DAN syarat jump terpenuhi
+    And(a=isCInstruction, b=jumpConditionMet, out=pcLoad);
+
+    // Inc selalu true, KECUALI kalau reset atau load nyala (PC handle prioritas internal: Reset > Load > Inc)
+    PC(in=outA, load=pcLoad, inc=true, reset=reset, out[0..14]=pc);
+}
