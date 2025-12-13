@@ -1,0 +1,54 @@
+class Fruit {
+    field int x, y;
+    field int size;
+
+    constructor Fruit new() {
+        let x = 100;
+        let y = 0;
+        let size = 10;
+        do draw();
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawRectangle(x, y, x + size, y + size);
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(x, y, x + size, y + size);
+        return;
+    }
+
+    // MODIFIKASI: Cuma jatuh, jangan reset sendiri!
+    method void fall() {
+        do erase();
+        let y = y + 2; 
+        do draw();
+        return;
+    }
+
+    // Getters
+    method int getLeft() { return x; }
+    method int getRight() { return x + size; }
+    method int getTop() { return y; }
+    method int getBottom() { return y + size; }
+    
+    // Reset dipanggil sama Game
+    method void reset() {
+        do erase();
+        let y = 0;
+        // Randomize posisi X
+        let x = x + 67;
+        if (x > 450) { let x = x - 400; }
+        do draw();
+        return;
+    }
+}

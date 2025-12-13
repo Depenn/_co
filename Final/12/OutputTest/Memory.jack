@@ -1,0 +1,82 @@
+class Memory {
+    static Array ram;
+    static Array heap;
+    static int freeList; // Pointer ke awal linked list blok kosong
+
+    /** Initializes the class. */
+    function void init() {
+        let ram = 0; // Trick buat akses seluruh RAM
+        
+        // Heap start at 2048, length 14336 (sampai 16383)
+        let heap = 2048; 
+        let freeList = 2048;
+        
+        // Init block pertama: Seluruh heap adalah satu blok kosong raksasa
+        let heap[0] = 14336; // Length
+        let heap[1] = 0;     // Next (null)
+        return;
+    }
+
+    /** Returns the RAM value at the given address. */
+    function int peek(int address) {
+        return ram[address];
+    }
+
+    /** Sets the RAM value at the given address to the given value. */
+    function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    /** Finds an available RAM block of the given size and returns
+     * a reference to its base address. */
+    function int alloc(int size) {
+        var int curr, next, len;
+        var int best, bestPrev; // Kita pake First Fit sebenernya cukup
+        var int block;
+        
+        let curr = freeList;
+        
+        // Cari blok yang cukup (size + 2 overhead buat header)
+        // Header: [Length, Next]
+        while (~(curr = 0)) {
+            let len = ram[curr]; // Panjang blok saat ini
+            
+            if (~(len < (size + 2))) {
+                // FOUND! Kita potong dari akhir blok biar gak usah update pointer prev
+                // Ini teknik "Carve from tail" yang efisien
+                
+                // Update sisa length di blok lama
+                let ram[curr] = len - (size + 2);
+                
+                // Siapin blok baru di ekor
+                let block = curr + ram[curr]; // Alamat blok baru
+                let ram[block] = size + 1;    // Header size block baru (opsional +1 buat housekeeping)
+                
+                return block + 1; // Return alamat DATA (setelah header)
+            }
+            
+            let curr = ram[curr + 1]; // Lanjut ke next block
+        }
+        
+        // Kalau abis loop gak nemu (Out of Memory)
+        return 0; // Seharusnya error
+    }
+
+    /** De-allocates the given object (cast as an array) by making
+     * it available for future allocations. */
+    function void deAlloc(Array o) {
+        var int segment;
+        // Segment asli mulai 1 langkah sebelum object (karena header size)
+        let segment = o - 1;
+        
+        // Balikin size asli (karena tadi dipotong buat header user)
+        let ram[segment] = ram[segment] + 1; // Restore total size (optional logic tergantung alloc)
+        
+        // Masukin balik ke Free List (Paling gampang: taruh di depan/head)
+        let ram[segment + 1] = freeList;
+        let freeList = segment;
+        
+        return;
+    }    
+}

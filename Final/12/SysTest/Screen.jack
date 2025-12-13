@@ -1,0 +1,163 @@
+class Screen {
+    static Array twoToThe; // Cache bit 2^i
+    static boolean color;  // true = black, false = white
+
+    /** Initializes the Screen. */
+    function void init() {
+        let color = true;
+        let twoToThe = Array.new(16);
+        // Init bit mask (copy dari Math.jack sebenernya, tapi static scope beda)
+        let twoToThe[0] = 1;
+        let twoToThe[1] = 2;
+        let twoToThe[2] = 4;
+        let twoToThe[3] = 8;
+        let twoToThe[4] = 16;
+        let twoToThe[5] = 32;
+        let twoToThe[6] = 64;
+        let twoToThe[7] = 128;
+        let twoToThe[8] = 256;
+        let twoToThe[9] = 512;
+        let twoToThe[10] = 1024;
+        let twoToThe[11] = 2048;
+        let twoToThe[12] = 4096;
+        let twoToThe[13] = 8192;
+        let twoToThe[14] = 16384;
+        let twoToThe[15] = 16384 + 16384; // 32768 (Int overflow handling)
+        return;
+    }
+
+    /** Erases the entire screen. */
+    function void clearScreen() {
+        var int i;
+        let i = 16384; // Screen start address
+        while (i < 24576) { // Screen end address (KBD)
+            do Memory.poke(i, 0);
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** Sets the current color, to be used for all subsequent drawXXX commands.
+     * Black is represented by true, white by false. */
+    function void setColor(boolean b) {
+        let color = b;
+        return;
+    }
+
+    /** Draws the (x,y) pixel, using the current color. */
+    function void drawPixel(int x, int y) {
+        var int address, value, bitMask;
+        
+        // Error check boundaries
+        if ((x < 0) | (x > 511) | (y < 0) | (y > 255)) { return; }
+
+        // Rumus Address: 16384 + (y * 32) + (x / 16)
+        // x/16 bisa dioptimasi jadi x di-shift kanan 4 kali, tapi Math.divide cukup.
+        let address = 16384 + (y * 32) + (x / 16);
+        
+        // Value saat ini di RAM
+        let value = Memory.peek(address);
+        
+        // Cari bit ke-berapa: x % 16
+        // x & 15 adalah cara cepat buat x % 16
+        let bitMask = twoToThe[x & 15];
+        
+        if (color) {
+            let value = value | bitMask; // Nyalakan bit (OR)
+        } else {
+            let value = value & ~bitMask; // Matikan bit (AND NOT)
+        }
+        
+        do Memory.poke(address, value);
+        return;
+    }
+
+    /** Draws a line from (x1, y1) to (x2, y2). */
+    function void drawLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, a, b, diff;
+        var int temp;
+        
+        // Pastikan x1 <= x2 biar gampang (kiri ke kanan)
+        if (x1 > x2) {
+            let temp = x1; let x1 = x2; let x2 = temp;
+            let temp = y1; let y1 = y2; let y2 = temp;
+        }
+        
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        
+        // 1. Garis Vertikal (dx = 0)
+        if (dx = 0) {
+            if (y1 > y2) { let temp = y1; let y1 = y2; let y2 = temp; } // Swap y
+            while (~(y1 > y2)) {
+                do Screen.drawPixel(x1, y1);
+                let y1 = y1 + 1;
+            }
+            return;
+        }
+        
+        // 2. Garis Horizontal (dy = 0)
+        if (dy = 0) {
+            while (~(x1 > x2)) {
+                do Screen.drawPixel(x1, y1);
+                let x1 = x1 + 1;
+            }
+            return;
+        }
+        
+        // 3. Garis Diagonal (Bresenham Algorithm)
+        let a = 0;
+        let b = 0;
+        let diff = 0; // diff = a*dy - b*dx
+        
+        if (dy > 0) { // Menanjak ke bawah kanan (y bertambah)
+            while ((~(a > dx)) & (~(b > dy))) {
+                do Screen.drawPixel(x1 + a, y1 + b);
+                // Decide next step: right or down?
+                if (diff < 0) {
+                    let a = a + 1;
+                    let diff = diff + dy;
+                } else {
+                    let b = b + 1;
+                    let diff = diff - dx;
+                }
+            }
+        } else { // Menanjak ke atas kanan (y berkurang)
+            while ((~(a > dx)) & (~(b < dy))) { // b is negative here logic-wise
+                do Screen.drawPixel(x1 + a, y1 + b);
+                if (diff < 0) {
+                    let a = a + 1;
+                    let diff = diff - dy; // dy negatif, jadi -dy positif
+                } else {
+                    let b = b - 1; // y berkurang
+                    let diff = diff - dx;
+                }
+            }
+        }
+        return;
+    }
+
+    /** Draws a filled rectangle whose top left corner is (x1, y1)
+     * and bottom right corner is (x2, y2). */
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+        while (~(y1 > y2)) {
+            do Screen.drawLine(x1, y1, x2, y1);
+            let y1 = y1 + 1;
+        }
+        return;
+    }
+
+    /** Draws a filled circle of radius r<=181 around (cx, cy). */
+    function void drawCircle(int cx, int cy, int r) {
+        var int dy, dx;
+        let dy = -r;
+        
+        while (~(dy > r)) {
+            // Rumus Pythagoras: dx = sqrt(r^2 - dy^2)
+            let dx = Math.sqrt((r * r) - (dy * dy));
+            do Screen.drawLine(cx - dx, cy + dy, cx + dx, cy + dy);
+            let dy = dy + 1;
+        }
+        return;
+    }
+}

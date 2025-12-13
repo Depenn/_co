@@ -1,0 +1,120 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Memory.jack
+
+/**
+ * This library provides two services: direct access to the computer's main
+ * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
+ * consists of 32,768 words, each holding a 16-bit binary number.
+ */ 
+class Memory {
+    static Array ram;
+    static Array heap;
+    static int freeList;
+
+    /** Initializes the class. */
+    function void init() {
+        let ram = 0;
+        
+        // Heap base: 2048, Heap length: 14336
+        let heap = 2048; 
+        let freeList = 2048;
+        
+        // Initial Block: [Length, Next]
+        let heap[0] = 14336; // Total heap size
+        let heap[1] = 0;     // Next is null
+        
+        return;
+    }
+
+    /** Returns the RAM value at the given address. */
+    function int peek(int address) {
+        return ram[address];
+    }
+
+    /** Sets the RAM value at the given address to the given value. */
+    function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    /** Finds an available RAM block of the given size and returns
+     * a reference to its base address. */
+    function int alloc(int size) {
+        var int curr, next, len;
+        var int block;
+        
+        let curr = freeList;
+        
+        // Kita butuh size + 1 (1 buat header length milik user)
+        // Tapi kita carve dari block yang ada, jadi block itu berkurang size + 1
+        
+        while (~(curr = 0)) {
+            let len = ram[curr];
+
+            // Cek apakah cukup: len >= size + 1
+            // Kita pake First Fit.
+            if (~(len < (size + 1))) {
+                
+                // FOUND!
+                // Strategi: Potong dari EKOR blok (Carve from tail).
+                // Ini biar kita gak usah update pointer 'next' di linked list.
+                
+                // Update sisa memory di blok free
+                let ram[curr] = len - (size + 1);
+                
+                // Tentukan alamat blok baru
+                // Alamat baru = (alamat awal) + (sisa panjang baru) + 1 (krn pointer curr di index 0)
+                // Wait, logic pointer di Jack itu relatif.
+                // Simple math: BlockBaru = curr + ram[curr] (yg udah diupdate)
+                // Tapi karena ram[curr] udah dikurangin, kita harus tambah offset pointer.
+                
+                let block = curr + ram[curr]; 
+                
+                // Set Header blok baru (hanya simpan Size)
+                let ram[block] = size + 1;
+                
+                // Return alamat DATA (block + 1)
+                return block + 1;
+            }
+            
+            let curr = ram[curr + 1]; // Move to next free block
+        }
+        
+        // Out of memory
+        return 0;
+    }
+
+    /** De-allocates the given object (cast as an array) by making
+     * it available for future allocations. */
+    function void deAlloc(Array o) {
+        var int block;
+        var int size;
+        
+        // Alamat asli blok adalah o - 1
+        let block = o - 1;
+        let size = ram[block]; // Ini size total (termasuk header)
+        
+        // Logic Simple Coalescing (Merge with Next/Head):
+        // Cek apakah (block + size) == freeList ?
+        // Kalau iya, berarti blok ini nempel persis di "atas" blok freeList pertama.
+        // Kita bisa gabungin.
+        
+        if ((block + size) = freeList) {
+            // Gabungin!
+            // Size blok ini ditambah size blok freeList
+            let ram[block] = size + ram[freeList];
+            // Next blok ini jadi Next-nya freeList
+            let ram[block + 1] = ram[freeList + 1];
+            // Update head freeList jadi blok ini
+            let freeList = block;
+        } else {
+            // Kalau gak nempel, insert biasa di Head (Insert First)
+            let ram[block + 1] = freeList; // Next = old head
+            let freeList = block;          // Head = new block
+        }
+        
+        return;
+    }    
+}

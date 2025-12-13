@@ -1,0 +1,126 @@
+class CatchGame {
+    field Paddle paddle;
+    field Fruit fruit;
+    field int direction; 
+    field int score;
+    field int highScore; // Nambah High Score
+
+    constructor CatchGame new() {
+        let paddle = Paddle.new(200, 230, 50, 10);
+        let fruit = Fruit.new();
+        let direction = 0;
+        let score = 0;
+        let highScore = 0; // Init High Score
+        return this;
+    }
+
+    method void dispose() {
+        do paddle.dispose();
+        do fruit.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void run() {
+        var char key;
+        var boolean exit;
+        var boolean isGameOver; // Flag status game
+        
+        let exit = false;
+        let isGameOver = false;
+
+        while (~exit) {
+            // --- GAMEPLAY LOOP ---
+            while ((~exit) & (~isGameOver)) {
+                let key = Keyboard.keyPressed();
+                
+                if (key = 81)  { let exit = true; } // Q key
+                if (key = 130) { let direction = 1; } // Left
+                else {
+                    if (key = 132) { let direction = 2; } // Right
+                    else { let direction = 0; }
+                }
+
+                do movePaddle();
+                do fruit.fall();
+                do checkCollision(); // Cek kena paddle?
+                
+                // Cek GAME OVER (Buah nyentuh lantai)
+                // Batas aman 245. Kalau lewat berarti miss.
+                if (fruit.getBottom() > 245) {
+                    let isGameOver = true;
+                }
+
+                do Sys.wait(10);
+            }
+
+            // --- GAME OVER STATE ---
+            if (isGameOver) {
+                // Update High Score
+                if (score > highScore) {
+                    let highScore = score;
+                }
+
+                // Tampilkan Menu Game Over
+                do Screen.clearScreen();
+                do Output.moveCursor(10, 22);
+                do Output.printString("GAME OVER");
+                
+                do Output.moveCursor(12, 22);
+                do Output.printString("Score: ");
+                do Output.printInt(score);
+                
+                do Output.moveCursor(14, 22);
+                do Output.printString("High Score: ");
+                do Output.printInt(highScore);
+
+                do Output.moveCursor(18, 18);
+                do Output.printString("Press 'R' to Retry");
+                do Output.moveCursor(19, 18);
+                do Output.printString("Press 'Q' to Quit");
+
+                // Tunggu Input User (R atau Q)
+                while (isGameOver & (~exit)) {
+                    let key = Keyboard.keyPressed();
+                    
+                    if (key = 81) { let exit = true; } // Q = Quit
+                    
+                    if (key = 82) { // R = Retry
+                        let isGameOver = false;
+                        let score = 0;
+                        do Screen.clearScreen();
+                        
+                        // Reset Object
+                        do fruit.reset();
+                        // Paddle digambar ulang krn habis clear screen
+                        do paddle.draw(); 
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    method void movePaddle() {
+        if (direction = 1) { do paddle.moveLeft(); }
+        if (direction = 2) { do paddle.moveRight(); }
+        return;
+    }
+
+    method void checkCollision() {
+        if ( (fruit.getBottom() > paddle.getTop()) & (fruit.getBottom() < paddle.getBottom()) ) {
+            if ( (fruit.getRight() > paddle.getLeft()) & (fruit.getLeft() < paddle.getRight()) ) {
+                // KENA!
+                let score = score + 1;
+                
+                // Print score realtime biar seru
+                do Output.moveCursor(0,0);
+                do Output.printString("Score: ");
+                do Output.printInt(score);
+                
+                do fruit.reset();
+            }
+        }
+        return;
+    }
+}
