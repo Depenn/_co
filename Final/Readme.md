@@ -1,67 +1,57 @@
-# Hack Computer Software Hierarchy (Nand2Tetris Projects 6-12)
-
-**Implementation of a modern software compiler and operating system hierarchy atop the Hack hardware platform.**
-
-This section of the repository focuses on the *Nand2Tetris* Part II software stack. Having built the hardware in Part I, this phase bridges the gap between the bare metal machine language and high-level object-oriented programming. The stack is built layer-by-layer, including a custom Assembler, a Virtual Machine backend, a Compiler for the Jack language, and a standard Operating System library.
-
-## Software Stack Overview
-
-The software hierarchy transforms high-level abstractions into executable binary:
-* **High-Level Language (Jack):** An object-oriented, Java-like language with static typing.
-* **Virtual Machine (VM):** A stack-based architecture that abstracts the underlying hardware implementation, allowing for two-tier compilation.
-* **Assembly Language:** Symbolic representation of the machine instructions (`@value`, `D=M+1`, etc.).
-* **Binary Code:** The final 16-bit instructions executed by the Hack CPU constructed in Part I.
-
-## Modules Breakdown
-
-### Project 6: The Assembler
-**Goal:** Develop a program to translate symbolic Hack Assembly (`.asm`) into binary machine code (`.hack`).
-* **Symbol Handling:** Implemented a symbol table to manage predefined symbols, labels (loops/jumps), and variables.
-* **Translation:** Parses A-instructions (addressing) and C-instructions (computation) into their corresponding 16-bit binary format.
-* **Result:** Enables writing software using human-readable symbols instead of raw binary.
-
-### Project 7 & 8: Virtual Machine Translator
-**Goal:** Build a backend translator that converts stack-based VM code into Hack Assembly.
-* **Stack Arithmetic:** Implemented push/pop operations, logical comparisons (`eq`, `gt`, `lt`), and arithmetic (`add`, `sub`, `neg`).
-* **Memory Access:** Mapped VM memory segments (`local`, `argument`, `this`, `that`, `temp`) to the host RAM.
-* **Program Control:** Implemented branching (`label`, `goto`, `if-goto`) and function call/return protocols to support recursion and stack frame management.
-
-### Project 9: High-Level Language Application
-**Goal:** Create an interactive application or game using the Jack programming language to test the system.
-* **Application:** *[Catch Fruit]*.
-* **Features:** Demonstrates standard library usage, graphical output, and user input handling on the Hack platform.
-
-### Project 10: Compiler I (Syntax Analysis)
-**Goal:** Build the front-end of the Jack Compiler (Tokenizer and Parser).
-* **Tokenizer:** Breaks raw Jack source code into a stream of meaningful tokens (keywords, identifiers, symbols).
-* **Parser:** Analyzes the grammatical structure of the token stream based on the Jack language grammar (LL(1)).
-* **Output:** Generates a structured XML representation of the code (Parse Tree) for debugging and logic verification.
-
-### Project 11: Compiler II (Code Generation)
-**Goal:** Build the back-end of the Jack Compiler to generate executable VM code.
-* **Symbol Table:** Manages identifier scope (class-level vs. subroutine-level) and type information.
-* **Code Generation:** Traverses the parse tree and emits the corresponding VM stack commands.
-* **Object Handling:** Manages object construction (`new`), method calls, and array manipulation.
-
-### Project 12: The Operating System
-**Goal:** Develop the standard library (API) for the Jack language to bridge software and hardware.
-* **Mathematical Operations:** Efficient implementation of multiplication, division, and square root (as the ALU only supports addition/subtraction).
-* **Memory Management:** Implemented `Memory.alloc` and `Memory.dealloc` (heap management) using a free-list algorithm.
-* **Drivers:** `Screen` (raster graphics drawing), `Keyboard` (input handling), `Output` (bitmap font rendering), and `String` manipulation.
-
-## Technology & Tools
-
-* **Implementation Language:** Python / Java / C++ (Used to build the Assembler & Compiler tools).
-* **Jack Language:** The high-level object-oriented language designed for this course.
-* **VM Emulator:** Visualizes the stack-based execution of the intermediate code.
-* **CPU Emulator:** Simulates the final binary execution on the Hack architecture.
-
-## How to Run
-
-1.  **Assembler:** Run the custom assembler script on an `.asm` file to generate `.hack`.
-2.  **VM Translator:** Run the translator on `.vm` files to generate `.asm`.
-3.  **Jack Compiler:** Pass a directory of `.jack` files to the compiler to generate `.vm` files.
-4.  **Simulation:** Use the **VM Emulator** to run the compiled `.vm` code or the **CPU Emulator** to run the final assembled `.hack` code.
+# Nand2Tetris Projects 6-12 Report
+**Student:** 林順義 (111310521)
+**Date:** 2025/12/16
 
 ---
-*Developed by 林順義.*
+
+## ⚠️ 誠實聲明 (Declaration of Originality)
+
+**總結 (Summary):**
+本專案 (Project 6 - Project 12) 的所有程式碼主要由 AI 生成。我理解整個軟體架構的運作流程 (Workflow)，但在具體的 Backend 實作細節 (如 Compiler 的 Python 邏輯或 OS 演算法細節) 是依靠 AI 協助完成。
+
+**AI 對話紀錄 (AI Chat Logs):**
+* [https://gemini.google.com/share/7661a23e80f3]
+
+---
+
+## 詳細章節說明 (Module Breakdown & Status)
+
+### Project 6: The Assembler
+* **來源 (Source):** AI 生成 (AI Generated).
+* **理解程度 (Understanding):** 我理解 Assembler 如何將 `.asm` 符號翻譯成二進制 `.hack`。我知道 Symbol Table 用來處理變數和跳轉標籤 (Labels)，也理解 A-instruction 與 C-instruction 的格式區別。
+
+### Project 7 & 8: Virtual Machine Translator
+* **來源 (Source):** AI 生成 (AI Generated).
+* **理解程度 (Understanding):** 我理解 VM 翻譯的邏輯。我知道 Stack arithmetic (push/pop, add, sub) 是如何運作的，以及 Memory Segments (local, argument, this, that) 是如何映射到 Hack RAM 的。
+
+### Project 9: High-Level Language Application (Catch Fruit)
+* **來源 (Source):** AI 協助修改範例 (AI Assisted / Modified).
+* **理解程度 (Understanding):** 這是用 Jack 語言寫的小遊戲。我理解 Jack 的語法結構以及如何呼叫標準庫 (如 Output, Screen)。
+
+### Project 10: Compiler I (Syntax Analysis)
+* **來源 (Source):** AI 生成 (AI Generated).
+* **理解程度 (Understanding):** 我理解 Compiler 前端的工作流程：先透過 Tokenizer 將原始碼切分成 Tokens，再透過 Parser 根據語法規則建立 XML 結構 (Parse Tree)。
+
+### Project 11: Compiler II (Code Generation)
+* **來源 (Source):** AI 生成 (AI Generated).
+* **理解程度 (Understanding):** 我理解 Backend 的目標是輸出 VM Code。我知道 Symbol Table 需要區分 Class scope 和 Subroutine scope，但具體的遞迴生成邏輯是由 AI 完成的。
+
+### Project 12: The Operating System
+* **來源 (Source):** AI 生成 (AI Generated).
+* **理解程度 (Understanding):** 雖然老師指示可以閱讀解答，但我嘗試使用 AI 協助完成了 OS 的實作。我理解這些 Class 是為了彌補硬體功能的不足 (例如用軟體實作乘法、除法、以及記憶體管理)。
+
+---
+
+## Software Stack Overview (My Learning Notes)
+
+雖然程式碼主要由 AI 生成，但我整理了以下我對 Nand2Tetris Part II 軟體層級的理解：
+
+The software hierarchy transforms high-level abstractions into executable binary:
+1.  **High-Level Language (Jack):** Object-oriented language similar to Java.
+2.  **Virtual Machine (VM):** Abstracts the hardware. The Compiler generates VM code, which is stack-based.
+3.  **Assembly Language:** Symbolic representation (`@value`, `D=M+1`). The VM Translator generates this.
+4.  **Binary Code:** The final 16-bit instructions. The Assembler generates this.
+
+### Tools Used
+* **Implementation Language:** Python & Jack (Code generated by AI).
+* **Verification:** Used the provided TextComparer and CPU Emulator to verify that the AI-generated code produces the correct output.
